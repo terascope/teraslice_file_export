@@ -1,0 +1,23 @@
+{
+  "name": "teraslice_file_export",
+  "version": "1.0.0",
+  "description": "teraslice processor to send data to file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terascope/teraslice_file_export.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/terascope/teraslice_file_export/issues"
+  },
+  "homepage": "https://github.com/terascope/teraslice_file_export#readme",
+  "dependencies": {
+    "bluebird": "^3.4.1",
+    "moment": "^2.14.1"
+  }
+}
