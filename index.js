@@ -32,10 +32,13 @@ function newProcessor(context, opConfig, jobConfig) {
 
     function json_lines(data, sliceLogger, msg) {
         var filePath = findPath(msg);
-        return Promise.map(data, function(doc) {
-            fs.appendFileAsync(filePath, JSON.stringify(doc) + '\n')
+        var strData = '';
+
+        data.forEach(function(doc) {
+            strData += JSON.stringify(doc) + '\n'
         });
 
+        fs.appendFileAsync(filePath, strData)
     }
 
     function json_array(data, sliceLogger, msg) {
