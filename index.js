@@ -8,33 +8,49 @@ Promise.promisifyAll(fs);
 var dirs = {};
 
 function newProcessor(context, opConfig, jobConfig) {
-    var context = context;
-    var opConfig = opConfig;
+    var path = parsePath(opConfig.path);
 
 // TODO: currently making dirs by date, need to allow other means
     makeFolders(context, opConfig, jobConfig);
 
-    return function(data, msg) {
-        var path = parsePath(opConfig.path);
-
+    function findPath(msg) {
         var filePath;
-        var transformData = processData(data, opConfig);
-
-        //if msg is by date
         if (msg.start) {
             if (dirs[msg.start]) {
                 filePath = path + msg.start + '/' + msg.start;
-                return fs.writeFileAsync(filePath, transformData)
             }
             else {
                 filePath = path + findDir(path, msg) + '/' + msg.start;
-                return fs.writeFileAsync(filePath, transformData)
             }
         }
         else {
             //TODO save to disk by some other factor besides date
         }
+
+        return filePath
     }
+
+    function json_lines(data, sliceLogger, msg) {
+        var filePath = findPath(msg);
+        return Promise.map(data, function(doc) {
+            fs.appendFileAsync(filePath, JSON.stringify(doc) + '\n')
+        });
+
+    }
+
+    function json_array(data, sliceLogger, msg) {
+        var filePath = findPath(msg);
+        var transformData = processData(data, opConfig);
+
+        return fs.writeFileAsync(filePath, transformData)
+    }
+
+    if (opConfig.output_format === 'json_array') {
+        return json_array
+    }
+
+    return json_lines
+
 }
 
 function processData(data, op) {
@@ -95,15 +111,32 @@ function mkdirSync(path) {
         }
     }
 }
+function getInterval(op, jobConfig) {
+    var interval = jobConfig.operations
+        .filter(function(op) {
+            return op.interval
+        })
+        .map(function(op) {
+            return op.interval
+        })[0];
+
+    try {
+        return processInterval(interval)
+    }
+    catch (err) {
+        return op.default_interval
+    }
+}
 
 //this is working for date based jobs, need to refactor
 function makeFolders(context, op, jobConfig) {
-    var logger = jobConfig.logger;
+    var logger = context.logger;
     logger.info('Creating directories ...');
+
     var path = parsePath(op.path);
-    var interval = processInterval(jobConfig.operations[0].interval);
-    var start = moment.utc(jobConfig.operations[0].start);
-    var limit = moment.utc(jobConfig.operations[0].end);
+    var interval = getInterval(op, jobConfig);
+    var start = moment(op.start).startOf(interval[1]);
+    var limit = moment(op.end).endOf(interval[1]);
 
     while (start <= limit) {
         var str = start.format();
@@ -111,8 +144,8 @@ function makeFolders(context, op, jobConfig) {
         mkdirSync(path + str);
         start.add(interval[0], interval[1]);
     }
-    logger.info('Directories have been made');
 
+    logger.info('Directories have been made');
 }
 
 function dateOptions(value) {
@@ -141,9 +174,8 @@ function processInterval(str) {
         //one or more digits, followed by one or more letters, case-insensitive
         var regex = /(\d+)([a-z]+)/i;
         var interval = regex.exec(str);
-
         if (interval === null) {
-            throw  new Error('elasticsearch_reader interval and/or delay are incorrectly formatted. Needs to follow ' +
+            throw  new Error('teraslice_file_export interval and/or delay are incorrectly formatted. Needs to follow ' +
                 '[number][letter\'s] format, e.g. "12s"')
         }
 
@@ -154,7 +186,7 @@ function processInterval(str) {
         return interval;
     }
     else {
-        throw  new Error('elasticsearch_reader interval and/or delay are incorrectly formatted. Needs to follow ' +
+        throw  new Error('teraslice_file_export interval and/or delay are incorrectly formatted. Needs to follow ' +
             '[number][letter\'s] format, e.g. "12s"')
     }
 }
@@ -171,6 +203,50 @@ function schema() {
             doc: 'set to true if you would like to save the metadata of the doc to file',
             default: false,
             format: Boolean
+        },
+        output_format: {
+            doc: 'format in which it exports the data to a file, json_array is a single entity, or json_lines where each record is on a new line',
+            default: 'json_array',
+            format: ['json_array', 'json_lines']
+        },
+        default_interval: {
+            doc: 'If a interval setting is not found in elasticsearch_reader, or is set to auto, it will use this default interval instead',
+            default: '1h',
+            format: function(val) {
+                processInterval(val)
+            }
+        },
+        start: {
+            doc: 'The start date (ISOstring or in ms) to which directories will start from',
+            default: null,
+            format: function(val) {
+                if (val) {
+                    if (typeof val === 'string' || typeof val === 'number') {
+                        if (!moment(new Date(val)).isValid()) {
+                            throw new Error("value: " + val + " cannot be coerced into a proper date")
+                        }
+                    }
+                    else {
+                        throw new Error('parameter must be a string or number IF specified')
+                    }
+                }
+            }
+        },
+        end: {
+            doc: 'The end date (ISOstring or in ms) to which directories will be made',
+            default: null,
+            format: function(val) {
+                if (val) {
+                    if (typeof val === 'string' || typeof val === 'number') {
+                        if (!moment(new Date(val)).isValid()) {
+                            throw new Error("value: " + val + " cannot be coerced into a proper date")
+                        }
+                    }
+                    else {
+                        throw new Error('parameter must be a string or number IF specified')
+                    }
+                }
+            }
         }
     };
 }
