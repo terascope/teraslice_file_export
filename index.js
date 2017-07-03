@@ -48,7 +48,7 @@ function newProcessor(context, opConfig, jobConfig) {
         return fs.writeFileAsync(filePath, transformData)
     }
 
-    if (opConfig.output_format === 'json_array') {
+    if (opConfig.format === 'json_array') {
         return json_array
     }
 
@@ -114,32 +114,32 @@ function mkdirSync(path) {
         }
     }
 }
-function getInterval(op, jobConfig) {
+function getInterval(opConfig, jobConfig) {
     var interval = jobConfig.operations
-        .filter(function(op) {
-            return op.interval
+        .filter(function(_op) {
+            return _op.interval
         })
-        .map(function(op) {
-            return op.interval
+        .map(function(_op) {
+            return _op.interval
         })[0];
 
     try {
         return processInterval(interval)
     }
     catch (err) {
-        return op.default_interval
+        return opConfig.default_interval
     }
 }
 
 //this is working for date based jobs, need to refactor
-function makeFolders(context, op, jobConfig) {
+function makeFolders(context, opConfig, jobConfig) {
     var logger = context.logger;
     logger.info('Creating directories ...');
 
-    var path = parsePath(op.path);
-    var interval = getInterval(op, jobConfig);
-    var start = moment(op.start).startOf(interval[1]);
-    var limit = moment(op.end).endOf(interval[1]);
+    var path = parsePath(opConfig.path);
+    var interval = getInterval(opConfig, jobConfig);
+    var start = moment(opConfig.start).startOf(interval[1]);
+    var limit = moment(opConfig.end).endOf(interval[1]);
 
     while (start <= limit) {
         var str = start.format();
@@ -207,9 +207,9 @@ function schema() {
             default: false,
             format: Boolean
         },
-        output_format: {
+        format: {
             doc: 'format in which it exports the data to a file, json_array is a single entity, or json_lines where each record is on a new line',
-            default: 'json_array',
+            default: 'json_lines',
             format: ['json_array', 'json_lines']
         },
         default_interval: {
