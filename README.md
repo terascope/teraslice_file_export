@@ -1,4 +1,3 @@
-<<<<<<< e716a9ab578e1f4d1273903b425a376e95f6080c
 TODO: this module is subject to refactoring to make it more generic. Currently it's too tied to elasticsearch outputs and is dependent on the records having dates.
 
 # Processor - teraslice_file_export
