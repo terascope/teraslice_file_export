@@ -20,17 +20,6 @@ Array of records in JSON format
 
 Currently undefined
 
-# Parameters
-
-| Name | Description | Default | Required |
-| ---- | ----------- | ------- | -------- |
-| path | path to directory where the data will be saved to, directory must pre-exist |  | Y |
-| elastic_metadata | set to true if you would like to save the metadata of the doc to file | false | N |
-| output_format | format in which it exports the data to a file, json_array is a single entity, or json_lines where each record is on a new line | json_array | N |
-| default_interval | If a interval setting is not found in elasticsearch_reader, or is set to auto, it will use this default interval instead | 1h | N |
-| start | The start date (ISOstring or in ms) to which directories will start from |  | Y |
-| end | The end date (ISOstring or in ms) to which directories will be made |  | Y |
-
 
 # Job configuration example
 
@@ -62,6 +51,15 @@ Export the data from `logs-*` for the specified date range and store to files in
 }
 ```
 
-# Notes
 
-This module trys to output data into directories grouped by date ranges.
+# Configuration
+
+| Configuration | Description | Type |  Notes
+|:---------: | :--------: | :------: | :------:
+path | path to directory where the data will be saved to, directory must pre-exist | String | required
+elastic_metadata | if set to true then the associated elasticsearch metadata of each doc will be written to file| Boolean | optional, defaults to false
+format | format in which it exports the data to a file. If set to json_array then it saves it as an array, or if set to json_lines then each record is separated by a new line | String | optional, defaults to json_lines
+default_interval | If a interval setting is not found in elasticsearch_reader, or is set to auto, it will use this default interval instead. Used to make chunks and the range of each folder | String | optional, defaults to '1h'. This follows npm module moment.js semantics
+start | The start date (ISOstring or in ms) to which directories will start from | String or Number | optional
+end | The end date (ISOstring or in ms) to which directories will start from | String or Number | optional
+
