@@ -7,11 +7,11 @@ Promise.promisifyAll(fs);
 //caching directories by interval specified in reader
 var dirs = {};
 
-function newProcessor(context, opConfig, jobConfig) {
+function newProcessor(context, opConfig, executionConfig) {
     var path = parsePath(opConfig.path);
 
 // TODO: currently making dirs by date, need to allow other means
-    makeFolders(context, opConfig, jobConfig);
+    makeFolders(context, opConfig, executionConfig);
 
     function findPath(msg) {
         var filePath;
@@ -114,8 +114,8 @@ function mkdirSync(path) {
         }
     }
 }
-function getInterval(opConfig, jobConfig) {
-    var interval = jobConfig.operations
+function getInterval(opConfig, executionConfig) {
+    var interval = executionConfig.operations
         .filter(function(_op) {
             return _op.interval
         })
@@ -132,12 +132,12 @@ function getInterval(opConfig, jobConfig) {
 }
 
 //this is working for date based jobs, need to refactor
-function makeFolders(context, opConfig, jobConfig) {
+function makeFolders(context, opConfig, executionConfig) {
     var logger = context.logger;
     logger.info('Creating directories ...');
 
     var path = parsePath(opConfig.path);
-    var interval = getInterval(opConfig, jobConfig);
+    var interval = getInterval(opConfig, executionConfig);
     var start = moment(opConfig.start).startOf(interval[1]);
     var limit = moment(opConfig.end).endOf(interval[1]);
 
